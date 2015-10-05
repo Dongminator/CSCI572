@@ -1,0 +1,105 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+
+<property>
+ <name>http.agent.name</name>
+ <value>My N pider</value>
+</property>
+
+<property>
+  <name>http.robot.rules.whitelist</name>
+  <value>http://bmc-tactical.com/</value>
+  <description>Comma separated list of hostnames or IP addresses to ignore
+  robot rules parsing for. Use with care and only if you are explicitly
+  allowed by the site owner to ignore the site's robots.txt!
+  </description>
+</property>
+
+<property>
+  <name>protocol.plugin.check.robots</name>
+  <value>false</value>
+  <description></description>
+</property>
+
+<property>
+  <name>fetcher.server.delay</name>
+  <value>2.0</value>
+  <description>The number of seconds the fetcher will delay between
+   successive requests to the same server.</description>
+</property>
+
+<property>
+  <name>fetcher.threads.fetch</name>
+  <value>1</value>
+  <description></description>
+</property>
+
+
+<property>
+    <name>plugin.includes</name>
+    <value>protocol-interactiveselenium|parse-html</value>
+</property>
+
+<property>
+  <name>interactiveselenium.handlers</name>
+  <value>DonglinHandler</value>
+  <description></description>
+</property>
+
+<property>
+  <name>parser.skip.truncated</name>
+  <value>false</value>
+</property>
+
+<!-- Selenium related -->
+<property>
+  <name>selenium.driver</name>
+  <value>firefox</value>
+  <description></description>
+</property>
+
+<property>
+  <name>selenium.hub.port</name>
+  <value>4444</value>
+  <description>Selenium Hub Location connection port</description>
+</property>
+
+<property>
+  <name>selenium.hub.path</name>
+  <value>/wd/hub</value>
+  <description>Selenium Hub Location connection path</description>
+</property>
+
+<property>
+  <name>selenium.hub.host</name>
+  <value>localhost</value>
+  <description>Selenium Hub Location connection host</description>
+</property>
+
+<property>
+  <name>selenium.hub.protocol</name>
+  <value>http</value>
+  <description>Selenium Hub Location connection protocol</description>
+</property>
+
+<property>
+  <name>selenium.grid.driver</name>
+  <value>firefox</value>
+  <description></description>
+</property>
+
+<property>
+  <name>libselenium.page.load.delay</name>
+  <value>3</value>
+  <description>
+    The delay in seconds to use when loading a page with lib-selenium. This
+    setting is used by protocol-selenium and protocol-interactiveselenium
+    since they depending on lib-selenium for fetching.
+  </description>
+</property>
+
+</configuration>

@@ -46,14 +46,17 @@ public class DonglinHandler implements InteractiveSeleniumHandler {
 	 */
 	@Override
 	public boolean shouldProcessURL(String URL) {
-		System.out.println("==> Processing URL: " + URL);
-		// Determine if we need to interact with the content
-		
-		// if so, return true
-		
-		// if not, return false
-		
-		return true;
+		URL = truncateUrl(URL);
+		switch (URL) {
+		case "www.donglinpu.me":
+		case "www.kyclassifieds.com":
+		case "www.ksl.com":
+		case "www.hawaiiguntrader.com":
+		// Add case here.
+			return true;
+		default:
+			return false;
+		}
 	}
 	
 	/**

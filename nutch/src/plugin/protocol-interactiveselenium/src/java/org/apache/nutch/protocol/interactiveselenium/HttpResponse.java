@@ -18,14 +18,17 @@ package org.apache.nutch.protocol.interactiveselenium;
 
 // JDK imports
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.PushbackInputStream;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
+import java.net.URLConnection;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.nutch.crawl.CrawlDatum;
@@ -34,11 +37,10 @@ import org.apache.nutch.metadata.SpellCheckedMetadata;
 import org.apache.nutch.net.protocols.HttpDateFormat;
 import org.apache.nutch.net.protocols.Response;
 import org.apache.nutch.protocol.ProtocolException;
-import org.apache.nutch.protocol.http.api.HttpException;
 import org.apache.nutch.protocol.http.api.HttpBase;
-import org.openqa.selenium.WebDriver;
-
+import org.apache.nutch.protocol.http.api.HttpException;
 import org.apache.nutch.protocol.selenium.HttpWebClient;
+import org.openqa.selenium.WebDriver;
 
 /* Most of this code was borrowed from protocol-htmlunit; which in turn borrowed it from protocol-httpclient */
 
@@ -272,17 +274,28 @@ public class HttpResponse implements Response {
 
     for (InteractiveSeleniumHandler handler : this.handlers) {
         if (! handler.shouldProcessURL(url.toString())) {
-            continue;
+				// should use protocol-http
+				URLConnection conn = url.openConnection();
+
+				// open the stream and put it into BufferedReader
+				BufferedReader br = new BufferedReader(new InputStreamReader(
+						conn.getInputStream()));
+
+				String inputLine;
+				while ((inputLine = br.readLine()) != null) {
+					processedPage = processedPage + inputLine;
+				}
+				continue;
         }
-
+        
         WebDriver driver = HttpWebClient.getDriverForPage(url.toString(), conf);
-
+        
         handler.processDriver(driver);
         processedPage += HttpWebClient.getHTMLContent(driver, conf);
 
         HttpWebClient.cleanUpDriver(driver);
     }
-
+//    System.out.println(processedPage);
     content = processedPage.getBytes("UTF-8");
   }
 

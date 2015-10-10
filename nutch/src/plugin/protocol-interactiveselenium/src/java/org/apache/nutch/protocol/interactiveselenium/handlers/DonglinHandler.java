@@ -41,7 +41,6 @@ public class DonglinHandler implements InteractiveSeleniumHandler {
 		case "msguntrader.com":
 			fetchMsguntrader(driver);
 			break;
-		
 		case "donglinpu.me":
 			fetchDonglinPuMe(driver);
 			break;
@@ -70,6 +69,7 @@ public class DonglinHandler implements InteractiveSeleniumHandler {
 		case "ksl.com":
 		case "msguntrader.com":
 		
+		case "freegunclassifieds.com":
 		case "donglinpu.me":
 		// Add case here.
 			return true;
@@ -241,5 +241,6 @@ public class DonglinHandler implements InteractiveSeleniumHandler {
 			}
 		}
 	}
+	
 	
 }

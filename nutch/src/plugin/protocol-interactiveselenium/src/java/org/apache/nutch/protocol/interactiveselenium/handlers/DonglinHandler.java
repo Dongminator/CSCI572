@@ -15,12 +15,8 @@ public class DonglinHandler implements InteractiveSeleniumHandler {
 
 	@Override
 	public void processDriver(WebDriver driver) {
-		
-		
+		System.out.println("=== INFO: DonglinHandler processing...");
 		String url = truncateUrl(driver.getCurrentUrl());
-		System.out.println("==> truncated url: " + url);
-		driver.manage().timeouts().pageLoadTimeout(5000, TimeUnit.MILLISECONDS);
-
 		
 		switch (url) {
 		case "arguntrader.com":

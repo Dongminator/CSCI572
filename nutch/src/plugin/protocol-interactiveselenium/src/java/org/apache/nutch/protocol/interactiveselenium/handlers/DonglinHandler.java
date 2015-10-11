@@ -1,7 +1,9 @@
 package org.apache.nutch.protocol.interactiveselenium;
 
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
 import org.openqa.selenium.By;
 import org.openqa.selenium.ElementNotVisibleException;
@@ -33,6 +35,9 @@ public class DonglinHandler implements InteractiveSeleniumHandler {
 			break;
 		case "ksl.com":
 			fetchKslCom(driver);
+			break;
+		case "iwanna.com":
+			fetchIwanna(driver);
 			break;
 		case "msguntrader.com":
 			fetchMsguntrader(driver);
@@ -66,6 +71,7 @@ public class DonglinHandler implements InteractiveSeleniumHandler {
 		case "msguntrader.com":
 		
 		case "freegunclassifieds.com":
+		case "iwanna.com":
 		case "donglinpu.me":
 		// Add case here.
 			return true;
@@ -235,6 +241,68 @@ public class DonglinHandler implements InteractiveSeleniumHandler {
 			} catch (Exception e) {
 				// do nothing
 			}
+		}
+	}
+	
+	
+	
+	/**
+	 * @author Donglin Pu
+	 * Fetch: http://www.iwanna.com/
+	 * This one has Javascript pagination
+	 * Example: http://www.iwanna.com/marketplace/forsale?ordby=&ordtype=&page=2&rows=30&adtype=FS&order_list=
+	 */
+	public void fetchIwanna (WebDriver driver){
+		
+		// id = paging
+		
+		List<WebElement> paging = driver.findElements(By.id("paging"));
+		if (paging.size() > 0) { // form exist
+			try {
+				String url = driver.getCurrentUrl();
+				
+				String[] checkParams = url.split("\\?");
+				int currPage = 1;
+				
+				if ( checkParams.length > 1) {
+					String[] params = checkParams[1].split("&");  
+					System.out.println(Arrays.toString(params));
+				    Map<String, String> map = new HashMap<String, String>();  
+				    for (String param : params)  
+				    {  
+				        String name = param.split("=")[0];  
+				        String value = param.split("=")[1];  
+				        if (name == "page") {
+				        	map.put(name, value);
+				        }
+				    }
+				    
+					if (map.size() > 0) {
+						currPage = Integer.parseInt(map.get("page"));
+						System.out.println("=== Got page: " + currPage);
+					} else {
+						System.out.println("=== not page");
+					}
+				} else {
+					// We are on page 1. 
+					currPage = 1;
+				}
+				
+				WebElement activeA = driver.findElement(By.xpath("//div[@id='paging']/div[@class='listing_paging']/span[@class='paging_link']/a[@class='active']"));
+				WebElement nextPageClickElement = driver.findElement(By.xpath("//div[@id='paging']/div[@class='listing_paging']/span[@class='paging_link']/a[@class='active']/following-sibling::a[1]"));
+
+				System.out.println("=== Active page: " + activeA.getText() + " || To click on page: " + nextPageClickElement.getText());
+				
+				nextPageClickElement.click();
+				
+			} catch (Exception e) {
+				System.out.println("=== there is an exeption. ===");
+				System.out.println(e.getMessage());
+				System.out.println("=== End of erro message. ===");
+				// do nothing
+			}
+		} else {
+			System.out.println("=== INFO: ID=paging not found. ");
 		}
 	}
 	

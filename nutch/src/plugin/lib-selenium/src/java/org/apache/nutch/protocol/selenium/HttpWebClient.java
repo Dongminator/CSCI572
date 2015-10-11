@@ -115,7 +115,7 @@ public class HttpWebClient {
 
         
         LOG.debug("Selenium {} WebDriver selected.", driverType);
-        driver.manage().timeouts().pageLoadTimeout(2000, TimeUnit.MILLISECONDS);
+        driver.manage().timeouts().pageLoadTimeout(20000, TimeUnit.MILLISECONDS);
         driver.get(url);
 
         new WebDriverWait(driver, pageLoadWait);

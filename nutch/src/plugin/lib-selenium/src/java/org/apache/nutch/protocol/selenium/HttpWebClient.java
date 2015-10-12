@@ -16,34 +16,35 @@
  */
 package org.apache.nutch.protocol.selenium;
 
-import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.fs.FileSystem;
-import org.apache.hadoop.fs.Path;
-import org.apache.hadoop.io.IOUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.openqa.selenium.By;
-import org.openqa.selenium.OutputType;
-import org.openqa.selenium.TakesScreenshot;
-import org.openqa.selenium.WebDriver;
-import org.openqa.selenium.chrome.ChromeDriver;
-import org.openqa.selenium.firefox.FirefoxDriver;
-import org.openqa.selenium.firefox.FirefoxProfile;
-import org.openqa.selenium.remote.DesiredCapabilities;
-import org.openqa.selenium.remote.RemoteWebDriver;
-import org.openqa.selenium.safari.SafariDriver;
-import org.openqa.selenium.support.ui.WebDriverWait;
-import org.openqa.selenium.io.TemporaryFilesystem;
-
-import com.opera.core.systems.OperaDriver;
-
 import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.String;
 import java.net.URL;
+import java.util.concurrent.TimeUnit;
+
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
+import org.apache.hadoop.fs.Path;
+import org.apache.hadoop.io.IOUtils;
+import org.openqa.selenium.By;
+import org.openqa.selenium.OutputType;
+import org.openqa.selenium.TakesScreenshot;
+import org.openqa.selenium.TimeoutException;
+import org.openqa.selenium.WebDriver;
+import org.openqa.selenium.chrome.ChromeDriver;
+import org.openqa.selenium.firefox.FirefoxDriver;
+import org.openqa.selenium.firefox.FirefoxProfile;
+import org.openqa.selenium.io.TemporaryFilesystem;
+import org.openqa.selenium.remote.DesiredCapabilities;
+import org.openqa.selenium.remote.RemoteWebDriver;
+import org.openqa.selenium.safari.SafariDriver;
+import org.openqa.selenium.support.ui.WebDriverWait;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.opera.core.systems.OperaDriver;
 
 public class HttpWebClient {
 
@@ -70,6 +71,7 @@ public class HttpWebClient {
 
       try {
         String driverType  = conf.get("selenium.driver", "firefox");
+
         switch (driverType) {
           case "firefox":
             driver = new FirefoxDriver();
@@ -110,14 +112,18 @@ public class HttpWebClient {
             driver = new FirefoxDriver();
             break;
         }
-        LOG.debug("Selenium {} WebDriver selected.", driverType);
-  
-        driver.get(url);
-        new WebDriverWait(driver, pageLoadWait);
-      } catch (Exception e) {
-        throw new RuntimeException(e);
-      }
 
+        
+        LOG.debug("Selenium {} WebDriver selected.", driverType);
+        driver.manage().timeouts().pageLoadTimeout(20000, TimeUnit.MILLISECONDS);
+        driver.get(url);
+
+        new WebDriverWait(driver, pageLoadWait);
+      } catch (TimeoutException e) {
+    	  System.out.println("===== Exception caught: Page loading too long... === ");
+      } catch (Exception e) {
+    	  throw new RuntimeException(e);
+      }
       return driver;
   }
 

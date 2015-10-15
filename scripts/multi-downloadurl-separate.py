@@ -48,6 +48,13 @@ def download_url(threadName, infile):
             threadLock.release()
             line = infile.readline()
             continue
+        except:
+            print(threadName+": problem with url: "+ url + "Unknown exception")
+            threadLock.acquire()
+            prob_url += 1
+            threadLock.release()
+            line = infile.readline()
+            continue
         token = line.split('.')
         for idx,suf in enumerate(suffix):
             if suf+"\n" == token[-1]:

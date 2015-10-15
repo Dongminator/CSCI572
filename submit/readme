@@ -6,3 +6,18 @@ To compile TikaParser_edited.java, please rename this file to TikaParser.java
 and replace the original file:
 
 nutch/src/plugin/parse-tika/src/java/org/apache/nutch/parse/tika/TikaParser.java
+
+=== Difficult URL problem_urls.txt ===
+
+=== Selenium Plugins /plugin ===
+lib-selenium change:
+Modified HttpWebClient.java, getDriverForPage method.
+- Added driver time out to prevent the driver from loading some resource forever.
+- Added time out exception to handle the time out issue.
+
+protocol-interactiveselenium
+Modified file: HttpResponse.java
+- Added HTML downloading code. So if we do not process an url using selenium, we can still fetch the HTML content successfully.
+
+Added file: handlers/DonglinHandler.java
+- Handles the interactions for all websites

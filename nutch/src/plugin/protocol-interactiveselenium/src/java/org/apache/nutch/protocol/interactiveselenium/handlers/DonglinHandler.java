@@ -199,23 +199,25 @@ public class DonglinHandler implements InteractiveSeleniumHandler {
 	 * Wait for popup (sumome-popup-form): If see popup: click close popup: $(".sumome-popup-close").click()
 	 */
 	private void fetchCheaperthandirt (WebDriver driver){
-		WebDriverWait wdw = new WebDriverWait(driver, 10);
-		WebElement popup = wdw.until(ExpectedConditions.presenceOfElementLocated(By.className("sumome-popup-form")));
-		if (popup != null) {
-			System.out.println("== here is popup! ==");
-			try {
+		System.out.println("== Fetching cheaperhandirt ==");
+		try {
+			WebDriverWait wdw = new WebDriverWait(driver, 10);
+			WebElement popup = wdw.until(ExpectedConditions.presenceOfElementLocated(By.className("sumome-popup-form")));
+			if (popup != null) {
+				System.out.println("== here is popup! ==");
 				WebElement popupCloseDivByXPATH = driver.findElement(By.xpath("/html/body/div[3]/div[2]/div[3]"));
 				popupCloseDivByXPATH.click();
-			} catch (NoSuchElementException ex) {
-				System.out.println("=== INFO: NoSuchElementException caught: popup element not found");
-				driver.navigate().refresh();
-			} catch (ElementNotVisibleException ex) { // this one worked!
-				System.out.println("=== INFO: ElementNotVisibleException caught: popup element not found");
-				driver.navigate().refresh();
-			} catch (Exception e) {
-				System.out.println("=== INFO: Exception caught: popup element not found");
 			}
+		} catch (NoSuchElementException ex) {
+			System.out.println("=== INFO: NoSuchElementException caught: popup element not found");
+			driver.navigate().refresh();
+		} catch (ElementNotVisibleException ex) { // this one worked!
+			System.out.println("=== INFO: ElementNotVisibleException caught: popup element not found");
+			driver.navigate().refresh();
+		} catch (Exception e) {
+			System.out.println("=== INFO: Some Exception caught: popup element not found");
 		}
+		
 	}
 	
 	

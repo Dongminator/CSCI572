@@ -1,0 +1,67 @@
+<?xml version="1.0"?>
+<?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+<!-- Put site-specific property overrides in this file. -->
+
+<configuration>
+
+<property>
+ <name>http.agent.name</name>
+ <value>My N pider</value>
+</property>
+
+<property>
+  <name>http.content.limit</name>
+  <value>-1</value>
+</property>
+
+<property>
+  <name>file.content.limit</name>
+  <value>-1</value>
+</property>
+
+<property>
+  <name>http.agent.rotate</name>
+  <value>true</value>
+  <description>
+    If true, instead of http.agent.name, alternating agent names are
+    chosen from a list provided via http.agent.rotate.file.
+  </description>
+</property>
+
+<property>
+  <name>http.agent.rotate.file</name>
+  <value>agents.txt</value>
+  <description>
+    File containing alternative user agent names to be used instead of
+    http.agent.name on a rotating basis if http.agent.rotate is true.
+    Each line of the file should contain exactly one agent
+    specification including name, version, description, URL, etc.
+  </description>
+</property>
+
+<property>
+  <name>http.robot.rules.whitelist</name>
+  <value>baron.pagemewhen.com</value>
+  <description>Comma separated list of hostnames or IP addresses to ignore
+  robot rules parsing for. Use with care and only if you are explicitly
+  allowed by the site owner to ignore the site's robots.txt!
+  </description>
+</property>
+
+<property>
+    <name>scoring.similarity.model.path</name>
+    <value>goldstandard.txt</value>
+</property>
+
+<property>
+    <name>scoring.similarity.stopword.file</name>
+    <value>stopwords.txt</value>
+</property>
+
+<property>
+    <name>plugin.includes</name>
+    <value>protocol-http|urlfilter-regex|parse-(html|tika)|scoring-opic|urlnormalizer-(pass|regex|basic)</value>
+</property>
+
+</configuration>

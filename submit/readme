@@ -1,0 +1,8 @@
+1. TikaParser_edited.java
+
+The edited lines of this file is from 158 to 184.
+
+To compile TikaParser_edited.java, please rename this file to TikaParser.java
+and replace the original file:
+
+nutch/src/plugin/parse-tika/src/java/org/apache/nutch/parse/tika/TikaParser.java

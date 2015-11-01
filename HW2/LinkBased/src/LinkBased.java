@@ -1,59 +1,168 @@
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.solr.client.solrj.SolrQuery;
+import org.apache.solr.client.solrj.SolrServer;
+import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.impl.HttpSolrServer;
+import org.apache.solr.client.solrj.request.CoreAdminRequest;
+import org.apache.solr.client.solrj.response.CoreAdminResponse;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.SolrDocument;
+import org.apache.solr.common.SolrDocumentList;
+import org.apache.solr.common.params.CoreAdminParams.CoreAdminAction;
 
+
+/**
+ * 
+ * @author Donglin Pu
+ *
+ */
 public class LinkBased {
 
-	
-	
 	public static void main (String[] args) {
 		
-		testGraph();
+		LinkBased linkbase = new LinkBased("http://localhost:8983/solr/collection1");
 		
-		
-//		String url = "http://localhost:8983/solr/collection1";
-//		
-//		SolrServer server = new HttpSolrServer( url );
-//		
-//		// http://lucene.apache.org/solr/5_3_1/solr-solrj/org/apache/solr/client/solrj/SolrQuery.html
-//		SolrQuery query = new SolrQuery();
-//	    query.setQuery( "*" );
-//	    
-//	    
-//	    QueryResponse rsp;
-//		try {
-//			rsp = server.query( query );
-//			SolrDocumentList docs = rsp.getResults();
-//			System.out.println(docs.size());
-//			System.out.println(docs.getNumFound());
-//			
-//			// http://lucene.apache.org/solr/4_3_1/solr-solrj/org/apache/solr/common/SolrDocument.html
-//			SolrDocument sd = docs.get(0);
-//			
-//			Collection<String> c = sd.getFieldNames();
-//			
-//			for (String s : c) {
-//				System.out.println(s);
-//				System.out.println(sd.getFieldValue(s));
-//				
-//				// here, call geoBasedGraph
-//				// input: List<LatLonName> locations, Stirng docId
-//				
-//				System.out.println();
-//			}
-//			
-//		} catch (SolrServerException e) {
-//			// TODO Auto-generated catch block
-//			e.printStackTrace();
-//		}
-		
+//		linkbase.getGeoScore();
+		linkbase.testGraph();
+//		linkbase.helperGetCores();
 	}
 	
-	public static void testGraph () {
+	private static final int CONFIG_MAX_GEOPOINT_PER_DOC_TO_COMPARE = 6;
+	
+	private static final String FIELD_GUN_RELATED_DATE = "Gun_date"; // TODO need to insert this date first.
+	private static final int CONFIG_LINK_BASE_DAYS_DIFF = 1; // If two documents are different by 1 day, add an edge between the two documents in the time based graph.
+	
+	private SolrServer server;
+	private long totalDocs;
+	
+	/**
+	 * @param index_path: solr index url
+	 */
+	public LinkBased (String index_path) {
+		String url = "http://localhost:8983/solr/collection1";
+		if (index_path.length() > 10) {
+			url = index_path;
+		}
+		server = new HttpSolrServer( url );
+	}
+	
+	
+	/**
+	 * Query Solr to get some documents.
+	 * @param queryStartPos
+	 * @return SolrDocumentList
+	 */
+	private SolrDocumentList querySolrIndex (int queryStartPos) {
+		// http://lucene.apache.org/solr/5_3_1/solr-solrj/org/apache/solr/client/solrj/SolrQuery.html
+		SolrQuery query = new SolrQuery();
+	    query.setQuery( "*" );
+		
+	    query.setStart(queryStartPos);
+	    QueryResponse rsp;
+	    
+	    try {
+			rsp = server.query( query );
+			return rsp.getResults();
+		} catch (SolrServerException e) {
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public Hashtable<String, Float> getGeoScore () {
+		int queryStartPos = 0;
+		SolrDocumentList docs = querySolrIndex(queryStartPos);
+		totalDocs = docs.getNumFound();
+		System.out.println("Doc Size: " + docs.size() + " || Num Found: " + totalDocs);
+
+		while (queryStartPos < totalDocs) {
+			// http://lucene.apache.org/solr/4_3_1/solr-solrj/org/apache/solr/common/SolrDocument.html
+			ListIterator<SolrDocument> docListIterator = docs.listIterator();
+
+			while (docListIterator.hasNext()) {
+				queryStartPos++;
+				SolrDocument sd = docListIterator.next();
+				String docId = (String)sd.getFieldValue("id");
+				
+				// Build geo graph - add all documents to graph first.
+				Object geoLat = sd.getFieldValue("Geographic_LATITUDE");
+				Object geoLon = sd.getFieldValue("Geographic_LONGITUDE");
+				Object geoName = sd.getFieldValue("Geographic_NAME");
+				List<LatLon> locations = new ArrayList<>();
+				if (geoLat != null && geoLon != null) {
+					locations.add(new LatLon((float)geoLat, (float)geoLon));
+				}
+				for (int i = 0; i < CONFIG_MAX_GEOPOINT_PER_DOC_TO_COMPARE; i ++) {
+					Object optLat = sd.getFieldValue("Optional_LATITUDE" + i);
+					Object optLon = sd.getFieldValue("Optional_LONGITUDE" + i);
+					Object optName = sd.getFieldValue("Optional_NAME" + i);
+					if (optLat != null && optLon != null) {
+						locations.add(new LatLon((float)geoLat, (float)geoLon));
+					} else {
+						break;
+					}
+				}
+				
+				GeoDoc geoDoc = new GeoDoc(locations, docId);
+				addToGeoGraph(geoDoc, "doc4");
+			}
+			docs = querySolrIndex(queryStartPos);
+		}
+		System.out.println("Final position: " + queryStartPos);
+		System.out.println("INFO: calculating geo score...");
+		
+		// After graph is done, compute the geo graph and return the Hashtable<String, Float>
+		return calcScore(geoBasedGraph);
+	}
+	
+	
+	/**
+	 * Calculate the time graph. 
+	 * @return
+	 */
+	public Hashtable<String, Float> getTimeScore () {
+		int queryStartPos = 0;
+		SolrDocumentList docs = querySolrIndex(queryStartPos);
+		totalDocs = docs.getNumFound();
+		System.out.println("Doc Size: " + docs.size() + " || Num Found: " + totalDocs);
+
+		while (queryStartPos < totalDocs) {
+			// http://lucene.apache.org/solr/4_3_1/solr-solrj/org/apache/solr/common/SolrDocument.html
+			ListIterator<SolrDocument> docListIterator = docs.listIterator();
+
+			while (docListIterator.hasNext()) {
+				queryStartPos++;
+				SolrDocument sd = docListIterator.next();
+				String docId = (String)sd.getFieldValue("id");
+
+				Date docGunRelatedDate = (Date) sd.getFieldValue(FIELD_GUN_RELATED_DATE);
+				addToTimeGraph(docGunRelatedDate, docId);
+			}
+			docs = querySolrIndex(queryStartPos);
+		}
+		System.out.println("Final position: " + queryStartPos);
+		System.out.println("INFO: calculating geo score...");
+		
+		// Compute the geo graph
+		return calcScore(geoBasedGraph);
+	}
+	
+	
+	
+	public void testGraph () {
 		List<LatLon> loc1 = new ArrayList<>();
 		loc1.add(new LatLon(0,0));
 		loc1.add(new LatLon(0,1));
@@ -93,22 +202,30 @@ public class LinkBased {
 		GeoDoc doc6 = new GeoDoc(loc6, "doc6");
 		addToGeoGraph(doc6, "doc6");
 		
+		List<LatLon> loc7 = new ArrayList<>();
+		loc7.add(new LatLon(9,8));
+		GeoDoc doc7 = new GeoDoc(loc7, "doc7");
+		addToGeoGraph(doc7, "doc7");
+		
 //		geoBasedGraph.printGraph();
-		calcScore(geoBasedGraph, geoDocScore);
+		calcScore(geoBasedGraph);
 	}
 	
 	/**
 	 * Step 1: addToGeoGraph: add all documents to graph. 
 	 * Step 2: calcScore (geoBasedGraph, geoDocScore);
 	 */
-	static Graph geoBasedGraph = new Graph("LinkBased_geo"); // undirected graph
-	static Hashtable<String, GeoDoc> geoDocScore = new Hashtable<>();
+	private Graph geoBasedGraph = new Graph("LinkBased_geo"); // undirected graph
+	private Hashtable<String, GeoDoc> geoDocScore = new Hashtable<>();
+	
+	
+	private Graph gunTypeBasedGraph = new Graph("LinkBased_gunType"); // undirected graph
+	private Hashtable<String, GeoDoc> gunTypeDocScore = new Hashtable<>();
 	
 	/**
-	 * @author Donglin Pu
 	 * This is the core link based algorithm. It calculates the score of each document in the graph.
 	 */
-	public static void calcScore (Graph g, Hashtable<String, GeoDoc> docWithScore) {
+	private Hashtable<String, Float> calcScore (Graph g) {
 		int iterationNumber = 40;
 		float dampingFactor = 0.85f;
 		
@@ -162,6 +279,11 @@ public class LinkBased {
 			}
 			
 			helperPrintDocScore (score); // score contains the final score for this field.
+			System.out.println("INFO: a hashtable of Document IDs and Scores is returned.");
+			return score;
+		} else {
+			System.out.println("INFO: no document in the geo graph or no document has any outlink. An empty hashtable is returned.");
+			return new Hashtable<>();
 		}
 	}
 	
@@ -176,6 +298,8 @@ public class LinkBased {
 		System.out.println("sum: " + sum);
 	}
 	
+	
+	
 	/**
 	 * @author Donglin Pu
 	 * @param locations
@@ -183,8 +307,7 @@ public class LinkBased {
 	 * 
 	 * This method will build the graph.
 	 */
-	public static void addToGeoGraph (GeoDoc doc, String docId) {
-		int maxPointsToCompare = 6;
+	public void addToGeoGraph (GeoDoc doc, String docId) {
 		geoBasedGraph.addVertex(docId);
 		geoDocScore.put(docId, doc);
 		
@@ -195,7 +318,7 @@ public class LinkBased {
 		
 		float closeThreshold = 2; // if two locations within 10 distance, connect them
 		
-		for (int i = 0; i < doc.locations.size() && i < maxPointsToCompare; i++) { // we only want the top 5 points. otherwise complexity too high.
+		for (int i = 0; i < doc.locations.size() && i < CONFIG_MAX_GEOPOINT_PER_DOC_TO_COMPARE; i++) { // we only want the top 5 points. otherwise complexity too high.
 			LatLon currLoc = doc.locations.get(i);
 			float thisLat = currLoc.lat;
 			float thisLon = currLoc.lon;
@@ -222,8 +345,64 @@ public class LinkBased {
 				}
 			}
 		}
+	}
+	
+	
+	/**
+	 * Build the time based graph.
+	 */
+	private Graph timeBasedGraph = new Graph("LinkBased_time"); // undirected graph
+	private Hashtable<String, Date> timeDocScore = new Hashtable<>();
+	
+	private void addToTimeGraph (Date date, String docId) {
+		timeBasedGraph.addVertex(docId);
+		timeDocScore.put(docId, date);
+
+		// for each existing document
+		Set<String> existingDocs = timeBasedGraph.graph.keySet();
+
+		for (String s : existingDocs) {
+			if (s != docId && !timeBasedGraph.adjacent(docId, s)) {
+				Date docToCompare = timeDocScore.get(s);
+				if ( compareDate(date, docToCompare, CONFIG_LINK_BASE_DAYS_DIFF) ) {
+					timeBasedGraph.addEdge(docId, s);
+				}
+			}
+		}
+	}
+	
+	
+	private boolean compareDate(Date d1, Date d2, int threshold){
+		int daysDiff = (int)((d1.getTime() - d2.getTime()) / (1000*60*60*24l));
+		return (Math.abs(daysDiff) <= threshold) ? true : false;
+	}
+		
+	public static void addToGunTypeGraph () {
 		
 	}
+	
+	public void helperGetCores () {
+		server = new HttpSolrServer( "http://localhost:8983/solr/" );
+		
+		CoreAdminRequest request = new CoreAdminRequest();
+		request.setAction(CoreAdminAction.STATUS);
+		CoreAdminResponse cores;
+		try {
+			cores = request.process(server);
+			// List of the cores
+			for (int i = 0; i < cores.getCoreStatus().size(); i++) {
+				System.out.println(cores.getCoreStatus().getName(i));
+			}
+		} catch (SolrServerException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+
 }
 
 /**
@@ -241,11 +420,8 @@ class GeoDoc {
 		this.docID = docID;
 		score = 0;
 	}
-	
-	public void updateScore (float score) {
-		this.score = score;
-	}
 }
+
 
 class LatLon {
 	float lat, lon;

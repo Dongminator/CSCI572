@@ -32,7 +32,8 @@ public class LinkBased {
 		LinkBased linkbase = new LinkBased("http://localhost:8983/solr/collection1");
 		
 //		linkbase.getGeoScore();
-		linkbase.testGraph();
+//		linkbase.testGraph();
+		linkbase.getTimeScore();
 //		linkbase.helperGetCores();
 	}
 	
@@ -147,9 +148,13 @@ public class LinkBased {
 				queryStartPos++;
 				SolrDocument sd = docListIterator.next();
 				String docId = (String)sd.getFieldValue("id");
-
-				Date docGunRelatedDate = (Date) sd.getFieldValue(FIELD_GUN_RELATED_DATE);
-				addToTimeGraph(docGunRelatedDate, docId);
+				
+				Object docGunRelatedDate = sd.getFieldValue(FIELD_GUN_RELATED_DATE);
+				if (docGunRelatedDate != null) {
+					addToTimeGraph( (Date)docGunRelatedDate, docId);
+				} else {
+					System.out.println("INFO: Time field does not exist for this document.");
+				}
 			}
 			docs = querySolrIndex(queryStartPos);
 		}

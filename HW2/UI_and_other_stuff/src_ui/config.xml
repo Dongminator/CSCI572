@@ -1,0 +1,5 @@
+<config>
+	<indexPath>/home/zjy/cs572/index</indexPath>
+	<solrURL>http://localhost:8983/solr/#/myCore</solrURL>
+	<outputPath>./</outputPath>
+</config>

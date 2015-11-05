@@ -41,7 +41,7 @@ public class LinkBased {
 				while (it.hasNext()) {
 					Field field = (Field) it.next();
 					if(field.name().equals(geoBoostFieldName))
-						bs.addScore(i, Double.parseDouble(field.stringValue()));
+						bs.addScore(i, (double)field.numericValue());
 				}
 			}
 			bs.setChanged(true);
@@ -59,7 +59,7 @@ public class LinkBased {
 				while (it.hasNext()) {
 					Field field = (Field) it.next();
 					if(field.name().equals(timeBoostFieldName))
-						bs.addScore(i, Double.parseDouble(field.stringValue()));
+						bs.addScore(i, (double)field.numericValue());
 				}
 			}
 			bs.setChanged(true);
@@ -77,7 +77,7 @@ public class LinkBased {
 				while (it.hasNext()) {
 					Field field = (Field) it.next();
 					if(field.name().equals(gunTypeBoostFieldName))
-						bs.addScore(i, Double.parseDouble(field.stringValue()));
+						bs.addScore(i, (double)field.numericValue());
 				}
 			}
 			bs.setChanged(true);

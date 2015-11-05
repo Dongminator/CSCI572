@@ -61,7 +61,68 @@
 
 <property>
     <name>plugin.includes</name>
-    <value>protocol-http|urlfilter-regex|parse-(html|tika)|scoring-opic|urlnormalizer-(pass|regex|basic)</value>
+    <value>protocol-interactiveselenium|urlfilter-regex|parse-(html|tika)|scoring-opic|urlnormalizer-(pass|regex|basic)</value>
 </property>
+
+<property>
+  <name>fetcher.server.delay</name>
+  <value>1.0</value>
+  <description>The number of seconds the fetcher will delay between
+   successive requests to the same server.</description>
+</property>
+
+<!-- Selenium related  -->
+<property>
+  <name>interactiveselenium.handlers</name>
+  <value>DonglinHandler</value>
+  <description></description>
+</property>
+
+<property>
+  <name>selenium.driver</name>
+  <value>firefox</value>
+  <description></description>
+</property>
+
+<property>
+  <name>selenium.hub.port</name>
+  <value>4444</value>
+  <description>Selenium Hub Location connection port</description>
+</property>
+
+<property>
+  <name>selenium.hub.path</name>
+  <value>/wd/hub</value>
+  <description>Selenium Hub Location connection path</description>
+</property>
+
+<property>
+  <name>selenium.hub.host</name>
+  <value>localhost</value>
+  <description>Selenium Hub Location connection host</description>
+</property>
+
+<property>
+  <name>selenium.hub.protocol</name>
+  <value>http</value>
+  <description>Selenium Hub Location connection protocol</description>
+</property>
+
+<property>
+  <name>selenium.grid.driver</name>
+  <value>firefox</value>
+  <description></description>
+</property>
+
+<property>
+  <name>libselenium.page.load.delay</name>
+  <value>3</value>
+  <description>
+    The delay in seconds to use when loading a page with lib-selenium. This
+    setting is used by protocol-selenium and protocol-interactiveselenium
+    since they depending on lib-selenium for fetching.
+  </description>
+</property>
+<!-- End of Selenium related -->
 
 </configuration>

@@ -1,0 +1,25 @@
+<project>
+
+	<modelVersion>4.0.0</modelVersion>
+	<name>Maven Default Project</name>
+	<groupId>me.donglinpu.csci572hw2</groupId>
+	<artifactId>csci572-hw2-team16</artifactId>
+	<version>1.0</version>
+	
+	<dependencies>
+		<dependency>
+               <artifactId>solr-solrj</artifactId>
+               <groupId>org.apache.solr</groupId>
+               <version>4.10.4</version>
+               <type>jar</type>
+               <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.6</version>
+        </dependency>
+        
+	</dependencies>
+
+</project>

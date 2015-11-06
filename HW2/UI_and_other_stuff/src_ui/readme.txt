@@ -1,3 +1,4 @@
+Notice: for now, the UI can only read index created by Solr 5.3.1
 To compile and run the UI and the content-based comparison demo, please follow these steps:
 1. create an eclipse project with the name "cs572_HW2"
 2. import all the files under src_ui folder into the project

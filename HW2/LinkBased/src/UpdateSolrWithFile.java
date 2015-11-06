@@ -130,10 +130,10 @@ public class UpdateSolrWithFile {
 			if (option == 1 && dateSet) {
 				DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:SS'Z'");
 				paraMiddle += ", \"Gun_date\":{\"set\":\"" + df.format(d) + "\"}";
+				System.out.println("Gun_date: " + df.format(d));
 			}
 			
 			String finalParams = paramsStart + paraMiddle + paramsEnd;
-			
 			if (updateSolr) {
 				System.out.println(finalParams);
 				HttpClient httpClient = HttpClientBuilder.create().build();
@@ -147,8 +147,7 @@ public class UpdateSolrWithFile {
 					
 					request.setEntity(params);
 			        HttpResponse response = httpClient.execute(request);
-			        System.out.println(response.getStatusLine().getStatusCode());
-			        System.out.println(response.getStatusLine().getReasonPhrase());
+			        System.out.println(response.getStatusLine().getStatusCode() + " " + response.getStatusLine().getReasonPhrase());
 			        
 				} catch (UnsupportedEncodingException e) {
 					e.printStackTrace();

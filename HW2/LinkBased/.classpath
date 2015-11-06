@@ -13,5 +13,6 @@
 	<classpathentry kind="lib" path="/Users/Dongminator/Documents/Study/USC/CS/CSCI572/hw2/SolrTest/lucene_solr_4_10/solr/dist/solrj-lib/zookeeper-3.4.6.jar"/>
 	<classpathentry kind="lib" path="/Users/Dongminator/Downloads/slf4j-jdk14-1.7.6.jar"/>
 	<classpathentry kind="lib" path="/Users/Dongminator/Downloads/commons-logging-1.2/commons-logging-1.2.jar"/>
+	<classpathentry kind="lib" path="json-simple-1.1.1.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

@@ -41,22 +41,26 @@ public class LinkBased {
 
 	public static void main (String[] args) {
 		
+//		JsonSolrIndex jsonSolrIndex = new JsonSolrIndex();
+//		jsonSolrIndex.creatDoc();
+		
 		
 		UpdateSolrWithFile updateSolr = new UpdateSolrWithFile();
-//		updateSolr.updateTime();
-//		updateSolr.updateGeo();
+		updateSolr.updateTime();
+		updateSolr.updateGeo();
 //		
-		LinkBased linkbase = new LinkBased("http://localhost:8983/solr/collection1");
+		LinkBased linkbase = new LinkBased(host_port+"collection1");
 		
 		Hashtable<String, Float> geoScore = linkbase.getGeoScore();
 		System.out.println("Total documents that have geo score: " + geoScore.size());
-		linkbase.writeRelevancyToFile(linkbase.geoBasedGraph, GRAPH_NAME_GEO);
+//		linkbase.writeRelevancyToFile(linkbase.geoBasedGraph, GRAPH_NAME_GEO);
+		linkbase.updateScore(geoScore, "linkbased_geo");
 		
 //		
-//		Hashtable<String, Float> timeScore = linkbase.getTimeScore();
-//		System.out.println("Total documents that have TIME score: " + timeScore.size());
+		Hashtable<String, Float> timeScore = linkbase.getTimeScore();
+		System.out.println("Total documents that have TIME score: " + timeScore.size());
 //		linkbase.writeRelevancyToFile(linkbase.timeBasedGraph, GRAPH_NAME_TIME);
-//		linkbase.updateScore(timeScore, "linkbased_time");
+		linkbase.updateScore(timeScore, "linkbased_time");
 		
 //		linkbase.helperGetCores();
 	}
@@ -65,8 +69,8 @@ public class LinkBased {
 	
 	private static final String FIELD_GUN_RELATED_DATE = "Gun_date"; // TODO need to insert this date first.
 	
-	private static final int CONFIG_LINK_BASE_DAYS_DIFF = 2; // If two documents are different by 1 day, add an edge between the two documents in the time based graph.
-	private static final float CONFIG_LINK_BASE_GEO_DIFF = 2f; // If two documents are different by 1 day, add an edge between the two documents in the time based graph.
+	private static final int CONFIG_LINK_BASE_DAYS_DIFF = 1; // If two documents are different by 1 day, add an edge between the two documents in the time based graph.
+	private static final float CONFIG_LINK_BASE_GEO_DIFF = 0.5f; // If two documents are different by 1 day, add an edge between the two documents in the time based graph.
 	
 	
 	private static final String GRAPH_NAME_TIME = "LinkBased_time";
@@ -75,13 +79,14 @@ public class LinkBased {
 	private SolrServer server;
 	private long totalDocs;
 	
+	private static final String host_port = "http://localhost:8983/solr/";
 	private String url;
 	
 	/**
 	 * @param index_path: solr index url
 	 */
 	public LinkBased (String index_path) {
-		url = "http://localhost:8983/solr/collection1";
+		url = host_port + "collection1";
 		if (index_path.length() > 10) {
 			url = index_path;
 		}
@@ -362,7 +367,6 @@ public class LinkBased {
 		 * locations 0: 1, 1, Loc1 -- primary location always at location 0
 		 * lcoations 1: 1, 2, loc2
 		 */
-		
 		for (int i = 0; i < doc.locations.size() && i < CONFIG_MAX_GEOPOINT_PER_DOC_TO_COMPARE; i++) { // we only want the top 5 points. otherwise complexity too high.
 			LatLon currLoc = doc.locations.get(i);
 			float thisLat = currLoc.lat;
@@ -381,7 +385,6 @@ public class LinkBased {
 						float existingLon = existing.lon;
 						
 						double pointsDis = Math.pow(existingLon - thisLon, 2) + Math.pow(existingLat - thisLat, 2) ;
-//						System.out.println(docId + " " + thisLat + ":" + thisLon + " - " + s + " " +existingLat + ":" + existingLon + " = " + pointsDis);
 						if ( pointsDis <= Math.pow(CONFIG_LINK_BASE_GEO_DIFF, 2)    ) {
 							geoBasedGraph.addEdge(docId, s);
 //							break outerDocsLoop;
@@ -433,7 +436,7 @@ public class LinkBased {
 	}
 	
 	public void helperGetCores () {
-		server = new HttpSolrServer( "http://localhost:8983/solr/" );
+		server = new HttpSolrServer( host_port );
 		
 		CoreAdminRequest request = new CoreAdminRequest();
 		request.setAction(CoreAdminAction.STATUS);
@@ -474,7 +477,7 @@ public class LinkBased {
 	private void sendUpdateRequest (String docID, float score, String field) {
 		HttpClient httpClient = HttpClientBuilder.create().build();
 		
-		HttpPost request = new HttpPost("http://localhost:8983/solr/update?commit=true");
+		HttpPost request = new HttpPost(host_port + "update?commit=true");
 		StringEntity params;
 		
 		try {
@@ -552,14 +555,18 @@ public class LinkBased {
 				
 				if (option.equals(GRAPH_NAME_GEO)) {
 					String geoSubString = geoDocSubId.get(docId);
-					writer.write(geoSubString, 0, geoSubString.length());
-
+					
 					List<String> linkedDocs = graphEntry.getValue();
 					
-					for (String s : linkedDocs) {
-						geoSubString = geoDocSubId.get(s);
-						writer.write(" " + geoSubString, 0, geoSubString.length() + 1);
+					if (linkedDocs.size() > 0) {
+						writer.write(geoSubString, 0, geoSubString.length());
+						for (String s : linkedDocs) {
+							geoSubString = geoDocSubId.get(s);
+							writer.write(" " + geoSubString, 0, geoSubString.length() + 1);
+						}
+						writer.newLine();
 					}
+					
 
 				} else if (option.equals(GRAPH_NAME_TIME)) {
 					String timeSubString = timeDocSubId.get(docId);
@@ -571,8 +578,8 @@ public class LinkBased {
 						timeSubString = timeDocSubId.get(s);
 						writer.write(" " + timeSubString, 0, timeSubString.length() + 1);
 					}
+					writer.newLine();
 				}
-				writer.newLine();
 			}
 			writer.close();
 		} catch (IOException e) {

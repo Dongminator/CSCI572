@@ -1,4 +1,10 @@
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.nio.charset.Charset;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Hashtable;
@@ -8,6 +14,12 @@ import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServer;
 import org.apache.solr.client.solrj.SolrServerException;
@@ -29,27 +41,47 @@ public class LinkBased {
 
 	public static void main (String[] args) {
 		
+		
+		UpdateSolrWithFile updateSolr = new UpdateSolrWithFile();
+//		updateSolr.updateTime();
+//		updateSolr.updateGeo();
+//		
 		LinkBased linkbase = new LinkBased("http://localhost:8983/solr/collection1");
 		
-//		linkbase.getGeoScore();
-//		linkbase.testGraph();
-		linkbase.getTimeScore();
+		Hashtable<String, Float> geoScore = linkbase.getGeoScore();
+		System.out.println("Total documents that have geo score: " + geoScore.size());
+		linkbase.writeRelevancyToFile(linkbase.geoBasedGraph, GRAPH_NAME_GEO);
+		
+//		
+//		Hashtable<String, Float> timeScore = linkbase.getTimeScore();
+//		System.out.println("Total documents that have TIME score: " + timeScore.size());
+//		linkbase.writeRelevancyToFile(linkbase.timeBasedGraph, GRAPH_NAME_TIME);
+//		linkbase.updateScore(timeScore, "linkbased_time");
+		
 //		linkbase.helperGetCores();
 	}
 	
 	private static final int CONFIG_MAX_GEOPOINT_PER_DOC_TO_COMPARE = 6;
 	
 	private static final String FIELD_GUN_RELATED_DATE = "Gun_date"; // TODO need to insert this date first.
-	private static final int CONFIG_LINK_BASE_DAYS_DIFF = 1; // If two documents are different by 1 day, add an edge between the two documents in the time based graph.
+	
+	private static final int CONFIG_LINK_BASE_DAYS_DIFF = 2; // If two documents are different by 1 day, add an edge between the two documents in the time based graph.
+	private static final float CONFIG_LINK_BASE_GEO_DIFF = 2f; // If two documents are different by 1 day, add an edge between the two documents in the time based graph.
+	
+	
+	private static final String GRAPH_NAME_TIME = "LinkBased_time";
+	private static final String GRAPH_NAME_GEO = "LinkBased_geo";
 	
 	private SolrServer server;
 	private long totalDocs;
+	
+	private String url;
 	
 	/**
 	 * @param index_path: solr index url
 	 */
 	public LinkBased (String index_path) {
-		String url = "http://localhost:8983/solr/collection1";
+		url = "http://localhost:8983/solr/collection1";
 		if (index_path.length() > 10) {
 			url = index_path;
 		}
@@ -80,14 +112,14 @@ public class LinkBased {
 	}
 	
 	/**
-	 * 
+	 * Calculate the GEO graph. 
 	 * @return
 	 */
 	public Hashtable<String, Float> getGeoScore () {
 		int queryStartPos = 0;
 		SolrDocumentList docs = querySolrIndex(queryStartPos);
 		totalDocs = docs.getNumFound();
-		System.out.println("Doc Size: " + docs.size() + " || Num Found: " + totalDocs);
+		System.out.println("GetGeoScore: Doc Size: " + docs.size() + " || Num Found: " + totalDocs);
 
 		while (queryStartPos < totalDocs) {
 			// http://lucene.apache.org/solr/4_3_1/solr-solrj/org/apache/solr/common/SolrDocument.html
@@ -102,8 +134,12 @@ public class LinkBased {
 				Object geoLat = sd.getFieldValue("Geographic_LATITUDE");
 				Object geoLon = sd.getFieldValue("Geographic_LONGITUDE");
 				Object geoName = sd.getFieldValue("Geographic_NAME");
+				if (geoName == null) {
+					geoName = "";
+				} 
+				String name = (String)geoName;
 				List<LatLon> locations = new ArrayList<>();
-				if (geoLat != null && geoLon != null) {
+				if ( !name.equals("North America") && geoLat != null && geoLon != null) {
 					locations.add(new LatLon((float)geoLat, (float)geoLon));
 				}
 				for (int i = 0; i < CONFIG_MAX_GEOPOINT_PER_DOC_TO_COMPARE; i ++) {
@@ -118,7 +154,7 @@ public class LinkBased {
 				}
 				
 				GeoDoc geoDoc = new GeoDoc(locations, docId);
-				addToGeoGraph(geoDoc, "doc4");
+				addToGeoGraph(geoDoc, docId);
 			}
 			docs = querySolrIndex(queryStartPos);
 		}
@@ -131,7 +167,7 @@ public class LinkBased {
 	
 	
 	/**
-	 * Calculate the time graph. 
+	 * Calculate the TIME graph. 
 	 * @return
 	 */
 	public Hashtable<String, Float> getTimeScore () {
@@ -149,20 +185,21 @@ public class LinkBased {
 				SolrDocument sd = docListIterator.next();
 				String docId = (String)sd.getFieldValue("id");
 				
+				// Get time related fields.
 				Object docGunRelatedDate = sd.getFieldValue(FIELD_GUN_RELATED_DATE);
 				if (docGunRelatedDate != null) {
 					addToTimeGraph( (Date)docGunRelatedDate, docId);
 				} else {
-					System.out.println("INFO: Time field does not exist for this document.");
+//					System.out.println("INFO: Time field does not exist for this document.");
 				}
 			}
 			docs = querySolrIndex(queryStartPos);
 		}
 		System.out.println("Final position: " + queryStartPos);
-		System.out.println("INFO: calculating geo score...");
+		System.out.println("INFO: calculating TIME score...");
 		
 		// Compute the geo graph
-		return calcScore(geoBasedGraph);
+		return calcScore(timeBasedGraph);
 	}
 	
 	
@@ -220,18 +257,20 @@ public class LinkBased {
 	 * Step 1: addToGeoGraph: add all documents to graph. 
 	 * Step 2: calcScore (geoBasedGraph, geoDocScore);
 	 */
-	private Graph geoBasedGraph = new Graph("LinkBased_geo"); // undirected graph
+	public Graph geoBasedGraph = new Graph(GRAPH_NAME_GEO); // undirected graph
 	private Hashtable<String, GeoDoc> geoDocScore = new Hashtable<>();
+	private Hashtable<String, String> geoDocSubId = new Hashtable<>();
+	private int geoDocCount = 0;
 	
 	
-	private Graph gunTypeBasedGraph = new Graph("LinkBased_gunType"); // undirected graph
+	public Graph gunTypeBasedGraph = new Graph("LinkBased_gunType"); // undirected graph
 	private Hashtable<String, GeoDoc> gunTypeDocScore = new Hashtable<>();
 	
 	/**
 	 * This is the core link based algorithm. It calculates the score of each document in the graph.
 	 */
 	private Hashtable<String, Float> calcScore (Graph g) {
-		int iterationNumber = 40;
+		int iterationNumber = 50;
 		float dampingFactor = 0.85f;
 		
 		// first get all documents with link
@@ -287,7 +326,7 @@ public class LinkBased {
 			System.out.println("INFO: a hashtable of Document IDs and Scores is returned.");
 			return score;
 		} else {
-			System.out.println("INFO: no document in the geo graph or no document has any outlink. An empty hashtable is returned.");
+			System.out.println("INFO: no document in the graph or no document has any outlink. An empty hashtable is returned.");
 			return new Hashtable<>();
 		}
 	}
@@ -313,6 +352,9 @@ public class LinkBased {
 	 * This method will build the graph.
 	 */
 	public void addToGeoGraph (GeoDoc doc, String docId) {
+		geoDocSubId.put(docId, "Doc" + geoDocCount);
+		geoDocCount++;
+		
 		geoBasedGraph.addVertex(docId);
 		geoDocScore.put(docId, doc);
 		
@@ -320,8 +362,6 @@ public class LinkBased {
 		 * locations 0: 1, 1, Loc1 -- primary location always at location 0
 		 * lcoations 1: 1, 2, loc2
 		 */
-		
-		float closeThreshold = 2; // if two locations within 10 distance, connect them
 		
 		for (int i = 0; i < doc.locations.size() && i < CONFIG_MAX_GEOPOINT_PER_DOC_TO_COMPARE; i++) { // we only want the top 5 points. otherwise complexity too high.
 			LatLon currLoc = doc.locations.get(i);
@@ -342,7 +382,7 @@ public class LinkBased {
 						
 						double pointsDis = Math.pow(existingLon - thisLon, 2) + Math.pow(existingLat - thisLat, 2) ;
 //						System.out.println(docId + " " + thisLat + ":" + thisLon + " - " + s + " " +existingLat + ":" + existingLon + " = " + pointsDis);
-						if ( pointsDis <= Math.pow(closeThreshold, 2)    ) {
+						if ( pointsDis <= Math.pow(CONFIG_LINK_BASE_GEO_DIFF, 2)    ) {
 							geoBasedGraph.addEdge(docId, s);
 //							break outerDocsLoop;
 						}
@@ -356,10 +396,16 @@ public class LinkBased {
 	/**
 	 * Build the time based graph.
 	 */
-	private Graph timeBasedGraph = new Graph("LinkBased_time"); // undirected graph
+	public Graph timeBasedGraph = new Graph(GRAPH_NAME_TIME); // undirected graph
 	private Hashtable<String, Date> timeDocScore = new Hashtable<>();
+
+	private Hashtable<String, String> timeDocSubId = new Hashtable<>();
+	private int timeDocCount = 0;
 	
 	private void addToTimeGraph (Date date, String docId) {
+		timeDocSubId.put(docId, "Doc" + timeDocCount);
+		timeDocCount++;
+		
 		timeBasedGraph.addVertex(docId);
 		timeDocScore.put(docId, date);
 
@@ -407,6 +453,133 @@ public class LinkBased {
 		}
 	}
 	
+	private void updateScore (Hashtable<String, Float> scores, String field) {
+		Iterator<Map.Entry<String, Float>> scoreIt = scores.entrySet().iterator();
+		
+		int numDoc = 0;
+		while (scoreIt.hasNext()) {
+			numDoc++;
+			Map.Entry<String, Float> score = scoreIt.next();
+			
+			String docID = score.getKey();
+			Float docScore = score.getValue();
+//			System.out.println(docID + " " + docScore);
+			
+			sendUpdateRequest (docID, docScore, field);
+		}
+		
+		System.out.println("Toal: " + numDoc);
+	}
+	
+	private void sendUpdateRequest (String docID, float score, String field) {
+		HttpClient httpClient = HttpClientBuilder.create().build();
+		
+		HttpPost request = new HttpPost("http://localhost:8983/solr/update?commit=true");
+		StringEntity params;
+		
+		try {
+			String finalParams = "[{\"id\":\"" + docID +  " \",\"" + field + "\":{\"set\":\"" + score + "\"}}] ";
+			params = new StringEntity(finalParams);
+			request.addHeader("content-type", "application/json");
+			
+			request.setEntity(params);
+	        HttpResponse response = httpClient.execute(request);
+//	        System.out.println(response.getStatusLine().getStatusCode());
+//	        System.out.println(response.getStatusLine().getReasonPhrase());
+	        
+		} catch (UnsupportedEncodingException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (ClientProtocolException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+	
+//	private void updateTest (Hashtable<String, Float> score) {
+//		SolrDocumentList docs = querySolrIndex(0);
+//		totalDocs = docs.getNumFound();
+//		System.out.println("Doc Size: " + docs.size() + " || Num Found: " + totalDocs);
+//
+//		// http://lucene.apache.org/solr/4_3_1/solr-solrj/org/apache/solr/common/SolrDocument.html
+//		ListIterator<SolrDocument> docListIterator = docs.listIterator();
+//
+//		Collection<SolrInputDocument> updateDocs = new ArrayList<SolrInputDocument>();
+//
+//	    
+//		while (docListIterator.hasNext()) {
+//			SolrDocument sd = docListIterator.next();
+//			String docId = (String)sd.getFieldValue("id");
+//			sd.addField("", "");
+//
+//			SolrInputDocument inputDoc = ClientUtils.toSolrInputDocument(sd);
+//			
+//			
+//			inputDoc.setField("linkbased_geo", 4.4);
+//			inputDoc.addField("linkbased_time", 5.6);
+//			
+//			System.out.println(docId);
+//			
+//			// curl 'localhost:8983/solr/update?commit=true' 
+//			// -H 'Content-type:application/json' 
+//			// -d 
+//			// '[{"id":"http://aberdeen-ca.americanlisted.com/phones/samsung-galaxy-note-edge-smn915-latest-model-32gb-charcoal-black_32263319.html","segment":{"set":"123"}}]'
+//		}
+//	}
+	
+	/*
+	 * Write to input.txt for D3 visualization.
+	 * Option 0: geo graph
+	 * Option 1: time graph
+	 */
+	public void writeRelevancyToFile (Graph g, String option) {
+		Charset charset = Charset.forName("US-ASCII");
+		Path path = FileSystems.getDefault().getPath("", option + ".txt");
+		
+		Iterator<Map.Entry<String, List<String>>> graphIterator = g.graph.entrySet().iterator();
+		
+		BufferedWriter writer;
+		try {
+			writer = Files.newBufferedWriter(path, charset);
+			
+			while (graphIterator.hasNext()) {
+				Map.Entry<String, List<String>> graphEntry = graphIterator.next();
+				String docId = graphEntry.getKey();
+				
+				
+				if (option.equals(GRAPH_NAME_GEO)) {
+					String geoSubString = geoDocSubId.get(docId);
+					writer.write(geoSubString, 0, geoSubString.length());
+
+					List<String> linkedDocs = graphEntry.getValue();
+					
+					for (String s : linkedDocs) {
+						geoSubString = geoDocSubId.get(s);
+						writer.write(" " + geoSubString, 0, geoSubString.length() + 1);
+					}
+
+				} else if (option.equals(GRAPH_NAME_TIME)) {
+					String timeSubString = timeDocSubId.get(docId);
+					writer.write(timeSubString, 0, timeSubString.length());
+					
+					List<String> linkedDocs = graphEntry.getValue();
+					
+					for (String s : linkedDocs) {
+						timeSubString = timeDocSubId.get(s);
+						writer.write(" " + timeSubString, 0, timeSubString.length() + 1);
+					}
+				}
+				writer.newLine();
+			}
+			writer.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
 }
 

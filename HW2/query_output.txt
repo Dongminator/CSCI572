@@ -1,0 +1,87 @@
+﻿3.4.a
+ Query: Gun_date:[2014-10-12T00:00:00Z TO 2015-12-12T00:00:00Z] AND “gun”
+time-based trends:
+    juauary 1
+    Feb 2
+    Mar 10
+    Apr 4
+    May 3
+    Jun 17
+    JUl 25
+    Aug 44
+    Set 77
+    Oct 106
+
+
+query 1(b): correlation between location and time
+North America + Aug + gun: 1
+North America + Sep + gun: 6
+North America + Oct + gun: 22
+Brazil + Aug + gun: 2
+Brazil + Sep + gun: 5
+Brazil + Oct + gun: 19
+
+
+
+
+
+
+
+
+
+
+3.4.b
+Gun_date:[2015-09-01T00:00:00Z TO 2015-09-31T00:00:00Z] AND (Geographic_NAME:"Brazil" OR Optional_NAME1: “Brazil” OR Optional_NAME2: “Brazil” OR Optional_NAME3: “Brazil” OR Optional_NAME4: “Brazil” OR Optional_NAME5: “Brazil”) AND “handgun”
+
+
+
+
+ Oct north america shotgun 16
+ Oct north america rifle 14
+ Oct north america handgun 6
+ Oct Brazil shotgun 13
+ Oct Brazil rifle 16
+ Oct Brazil handgun 7
+ Sept north america shotgun 2
+ Sept north america rifle 7
+ Sept north america handgun 2
+ Sept Brazil shotgun 3
+ Sept Brazil rifle 1
+ Sept Brazil handgun 0
+
+
+3.4.c Gun_date:[2015-09-01T00:00:00Z TO 2015-09-31T00:00:00Z] AND “handgun”
+Oct shotgun 17
+Oct rifle 15
+Oct handgun 6
+Sep shotgun 1
+Sep rifle 5
+Sep handgun 0
+Aug shotgun 0
+Aug rifle 4
+Aug handgun 1
+July shotgun 3
+July rifle 11
+July handgun 0
+
+
+3.4.d QUery:  "gun" AND "like" AND NOT "like new"
+like AND gun 27
+ID:/33/9c/347edf4d3f92f45597d655d7c6c7c3dd_minnesota-ammo-for-sale--usgi-am.html
+
+
+cool AND gun 3
+/33/9c/347edf4d3f92f45597d655d7c6c7c3dd_minnesota-ammo-for-sale--usgi-am.html
+/33/dc/382120ed31901607d189c60cc8a1ed9d_109850133539940981668.html
+/26/f7/2d4bfff56e17574bfec353967f8a2f01_visitor-hunting-stories-5.html
+
+
+yeah AND gun 0
+like AND cool AND gun 3
+
+
+3.4.e
+cash AND gun 9
+conceal AND gun 1
+http://www.armslist.com/posts/4755833/louisiana-handguns-for-sale--kahr-cw-40
+“Single stack 6+1 mag (great for conceal carry). Cash, face to face transfer. No shipping or trades.”
